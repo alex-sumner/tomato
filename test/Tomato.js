@@ -1,6 +1,6 @@
 const { expect } = require("chai")
 
-describe("KickFactory contract", function () {
+describe("Tomato token contract", function () {
 
     let hhTomato
     let owner
