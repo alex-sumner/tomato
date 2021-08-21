@@ -8,7 +8,7 @@ contract Tomato is ERC20 {
 
     address treasury;
     address owner;
-    bool taxing = true;
+    bool taxing;
     uint constant SUPPLY_CAP = 500000000000000000000000;
     uint constant INITIAL_SUPPLY = SUPPLY_CAP/10;
     
