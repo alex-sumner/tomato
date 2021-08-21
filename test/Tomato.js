@@ -10,9 +10,11 @@ describe("KickFactory contract", function () {
     let addrs
     
     const logger = ethers.utils.Logger.globalLogger()
-    const fifty_thousand = "50000000000000000000000";
-    const five_thousand = "5000000000000000000000";
+    const five_hundred_thousand = "500000000000000000000000"
+    const fifty_thousand = "50000000000000000000000"
+    const five_thousand = "5000000000000000000000"
     const initial_supply = fifty_thousand;
+    const total_supply = five_hundred_thousand
     
     beforeEach(async function () {
         Tomato = await ethers.getContractFactory("Tomato")
@@ -53,4 +55,10 @@ describe("KickFactory contract", function () {
         expect(await hhTomato.balanceOf(addr2.address)).to.equal(ethers.BigNumber.from(five_thousand))
     })
 
+    it("should not exceed total supply cap", async function () {
+        const remainingSupply = ethers.BigNumber.from(total_supply).sub(ethers.BigNumber.from(initial_supply))
+        await hhTomato.connect(owner).mint(addr1.address, remainingSupply)
+        expect(await hhTomato.balanceOf(addr1.address)).to.equal(remainingSupply)
+        await expect(hhTomato.connect(owner).mint(addr2.address, 1)).to.be.revertedWith("Supply cap exceeded")
+    })
 })
