@@ -44,7 +44,7 @@ describe("Tomato token contract", function () {
         expect(await hhTomato.balanceOf(addr2.address)).to.equal(ethers.BigNumber.from(five_thousand))
     })
 
-    it("should tax transfers at 2% when turned off", async function () {
+    it("should tax transfers at 2% when turned on", async function () {
         await hhTomato.connect(owner).mint(addr1.address, five_thousand)
         expect(await hhTomato.balanceOf(addr1.address)).to.equal(five_thousand)
         await hhTomato.connect(owner).setTaxing(true)
