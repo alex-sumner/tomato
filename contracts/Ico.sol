@@ -6,7 +6,7 @@ import {Tomato} from "./Tomato.sol";
 
 contract Ico {
 
-    public Tomato tomato;
+    Tomato public tomato;
 
     address owner;
     mapping(address => uint) contributions;
@@ -23,6 +23,7 @@ contract Ico {
     event RemoveApprovedInvestor(address indexed investor);
     event MoveToPhase(Phase indexed phase);
 
+    uint constant TOMATOES_PER_ETH = 5;
     uint constant MAX_INDIVIDUAL_SEED_CONTRIBUTION = 1500 ether;
     uint constant MAX_TOTAL_SEED_CONTRIBUTION = 15000 ether;
     uint constant MAX_INDIVIDUAL_GENERAL_CONTRIBUTION = 1000 ether;
@@ -57,7 +58,7 @@ contract Ico {
         contributions[msg.sender] += msg.value;
         totalRaised += msg.value;
         if (currentPhase == Phase.OPEN) {
-            tomato.mint(msg.sender, msg.value);
+            tomato.mint(msg.sender, msg.value * TOMATOES_PER_ETH);
         }
         emit Contribute(msg.sender, msg.value);
     }
@@ -95,7 +96,7 @@ contract Ico {
     function releaseTheTomatoes() private {
         for (uint i=0; i<contributors.length; i++) {
             address contributor = contributors[i];
-            tomato.mint(contributor, contributions[contributor]);
+            tomato.mint(contributor, contributions[contributor] * TOMATOES_PER_ETH);
         }
     }
 

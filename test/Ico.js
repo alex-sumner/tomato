@@ -10,18 +10,15 @@ describe("ICO contract", function () {
     let addrs
     
     const logger = ethers.utils.Logger.globalLogger()
-    const five_hundred_thousand = ethers.utils.parseEther("500000")
-    const fifty_thousand = ethers.utils.parseEther("50000")
-    const fifteen_thousand = ethers.utils.parseEther("15000")
-    const ten_thousand = ethers.utils.parseEther("10000")
     const six_thousand = ethers.utils.parseEther("6000")
     const five_thousand = ethers.utils.parseEther("5000")
+    const six_thousand_five_hundred = ethers.utils.parseEther("6500")
     const one_thousand_five_hundred = ethers.utils.parseEther("1500")
     const one_thousand = ethers.utils.parseEther("1000")
+    const three_hundred = ethers.utils.parseEther("300")
     const one = ethers.utils.parseEther("1")
+    const one_thousandth = ethers.utils.parseEther("0.001")
     
-    const initial_supply = fifty_thousand;
-    const total_supply = five_hundred_thousand
     const seed_individual_limit = one_thousand_five_hundred
     
     beforeEach(async function () {
@@ -38,6 +35,19 @@ describe("ICO contract", function () {
         await hhIco.connect(owner).addApprovedInvestor(addr1.address)
         await hhIco.connect(addr1).contribute({value: one})
         expect(await hhIco.connect(owner).getContribution(addr1.address)).to.equal(one)
+    })
+
+    it("should not accept contributions of less than 0.01 eth", async function () {
+        await expect(hhIco.connect(addr1).contribute({value: one_thousandth})).to.be.revertedWith("Contribution must be at least 0.01 ETH.")
+    })
+
+    it("should only allow owner to pause fundraising", async function () {
+        await expect(hhIco.connect(addr1).setPaused(true)).to.be.revertedWith("Must be owner")
+    })
+
+    it("should not accept contributions when paused", async function () {
+        await hhIco.connect(owner).setPaused(true)
+        await expect(hhIco.connect(addr1).contribute({value: one})).to.be.revertedWith("Fundraising is paused.")
     })
 
     it("should not accept contributions from non-approved investors during seed phase", async function () {
@@ -106,6 +116,39 @@ describe("ICO contract", function () {
         await hhIco.connect(addrs[14]).contribute({value: six_thousand})
         await hhIco.connect(addrs[15]).contribute({value: six_thousand})
         await expect(hhIco.connect(addr1).contribute({value: one})).to.be.revertedWith("Max contribution exceeded")
+    })
+
+    it("should mint on entering open phase", async function () {
+        await hhIco.connect(owner).moveToNextPhase()
+        await hhIco.connect(addr1).contribute({value: one_thousand})
+        await hhIco.connect(addr2).contribute({value: three_hundred})
+        await hhIco.connect(owner).moveToNextPhase()
+        const Tomato = await ethers.getContractFactory("Tomato")
+        const hhTomato = await Tomato.attach(await hhIco.tomato())
+        expect(await hhTomato.connect(owner).balanceOf(addr1.address)).to.equal(five_thousand)
+        expect(await hhTomato.connect(owner).balanceOf(addr2.address)).to.equal(one_thousand_five_hundred)
+    })
+
+    it("should mint after entering open phase", async function () {
+        await hhIco.connect(owner).moveToNextPhase()
+        await hhIco.connect(addr1).contribute({value: one_thousand})
+        await hhIco.connect(owner).moveToNextPhase()
+        await hhIco.connect(addr2).contribute({value: three_hundred})
+        const Tomato = await ethers.getContractFactory("Tomato")
+        const hhTomato = await Tomato.attach(await hhIco.tomato())
+        expect(await hhTomato.connect(owner).balanceOf(addr1.address)).to.equal(five_thousand)
+        expect(await hhTomato.connect(owner).balanceOf(addr2.address)).to.equal(one_thousand_five_hundred)
+    })
+
+    it("should only mint each contribution once", async function () {
+        await hhIco.connect(owner).moveToNextPhase()
+        await hhIco.connect(addr1).contribute({value: one_thousand})
+        await hhIco.connect(owner).moveToNextPhase()
+        const Tomato = await ethers.getContractFactory("Tomato")
+        const hhTomato = await Tomato.attach(await hhIco.tomato())
+        expect(await hhTomato.connect(owner).balanceOf(addr1.address)).to.equal(five_thousand)
+        await hhIco.connect(addr1).contribute({value: three_hundred})
+        expect(await hhTomato.connect(owner).balanceOf(addr1.address)).to.equal(six_thousand_five_hundred)
     })
 
 })
