@@ -102,13 +102,13 @@ describe("TomatoPool contract", function () {
     })
 
     it("should trade eth for tomatoes", async function () {
-        await hhTomato.mint(hhPool.address, ethers.utils.parseEther("25"))
-        await hhPool.icoDeposit({value: ethers.utils.parseEther("5")})
-        await hhTomato.mint(hhPool.address, ethers.utils.parseEther("25"))
-        await hhPool.connect(alice).deposit({value: ethers.utils.parseEther("5")})
+        await hhTomato.mint(hhPool.address, ethers.utils.parseEther("500"))
+        await hhPool.icoDeposit({value: ethers.utils.parseEther("100")})
+        await hhTomato.mint(hhPool.address, ethers.utils.parseEther("500"))
+        await hhPool.connect(alice).deposit({value: ethers.utils.parseEther("100")})
         await hhPool.connect(bob).swap({value: ethers.utils.parseEther("1")})
         let bobTomatoes = await hhTomato.balanceOf(bob.address)
-        expect(bobTomatoes).to.be.closeTo(ethers.utils.parseEther("4.5"), ethers.utils.parseEther("0.01"))
+        expect(bobTomatoes).to.be.closeTo(ethers.utils.parseEther("4.9"), ethers.utils.parseEther("0.04"))
     })
 
     it("should reject trades with slippage > 10%s", async function () {

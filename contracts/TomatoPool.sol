@@ -22,6 +22,11 @@ contract TomatoPool is ERC20, ReentrancyGuard {
 
     TomatoInterface private tomato;
 
+    event Deposit(address indexed contributor, uint eth, uint tmto);
+    event Withdraw(address indexed contributor, uint eth, uint tmto);
+    event SwapEthForTmto(address indexed contributor, uint eth, uint tmto);
+    event SwapTmtoForEth(address indexed contributor, uint eth, uint tmto);
+    
     constructor(address _tomato, address _ico, address _treasury) ERC20("TomatoLP", "TOLP"){
         tomato = TomatoInterface(_tomato);
         // if _ico is zero nobody can call icoDeposit, which is ok, and then we won't need _treasury either
@@ -43,6 +48,7 @@ contract TomatoPool is ERC20, ReentrancyGuard {
         require(ethAmount > 0, "no ETH supplied");
         require(tmtoAmount > 0, "no Tomato coins supplied");
         mint(lpTokenRecipient, ethAmount, tmtoAmount);
+        emit Deposit(msg.sender, ethAmount, tmtoAmount);
         sync();
     }
 
@@ -63,6 +69,7 @@ contract TomatoPool is ERC20, ReentrancyGuard {
         tomato.transfer(msg.sender, amountTmto);
         (bool sent, ) = msg.sender.call{value: amountEth}("");
         require(sent, "Failed to send Ether");
+        emit Withdraw(msg.sender, amountEth, amountTmto);
         sync();
     }
     
@@ -85,6 +92,7 @@ contract TomatoPool is ERC20, ReentrancyGuard {
             (uint tmtoOut, uint fee) = calcTradeAmtAndFee(ethAmount, prevEthBalance, prevTmtoBalance);
             tomato.transfer(msg.sender, tmtoOut);
             tomato.transfer(treasury, fee);
+            emit SwapEthForTmto(msg.sender, ethAmount, tmtoOut);
         }
         if (tmtoAmount > 0) {
             (uint ethOut, uint fee) = calcTradeAmtAndFee(tmtoAmount, prevTmtoBalance, prevEthBalance);
@@ -93,6 +101,7 @@ contract TomatoPool is ERC20, ReentrancyGuard {
             require(sent, "Failed to send Ether");
             (sent, ) = treasury.call{value: fee}("");
             require(sent, "Failed to send Ether");
+            emit SwapTmtoForEth(msg.sender, ethOut, tmtoAmount);
         }
         sync();
     }
