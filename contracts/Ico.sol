@@ -3,18 +3,19 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {Tomato} from "./Tomato.sol";
+import {TomatoPool} from "./TomatoPool.sol";
 
 contract Ico {
 
     Tomato public tomato;
+    TomatoPool public pool;
 
     address owner;
-    mapping(address => uint) contributions;
-    address[] contributors;
+    mapping(address => uint) public contributions;
     mapping(address => bool) approvedInvestors;
-    bool paused;
-    Phase currentPhase = Phase.SEED;
-    uint totalRaised;
+    bool public paused;
+    Phase public currentPhase = Phase.SEED;
+    uint public totalRaised;
     
     enum Phase {SEED, GENERAL, OPEN}
 
@@ -33,9 +34,10 @@ contract Ico {
     constructor(address treasury) {
         owner = msg.sender;
         tomato = new Tomato(treasury);
+        pool = new TomatoPool(address(tomato), address(this), treasury);
+        tomato.mint(address(this), MAX_TOTAL_CONTRIBUTION * TOMATOES_PER_ETH);
     }
 
-    // rejects with request to use the contribute function
     receive() external payable {
         revert("Please call contribute");
     }
@@ -52,18 +54,12 @@ contract Ico {
             require(contributions[msg.sender] + msg.value <= MAX_INDIVIDUAL_GENERAL_CONTRIBUTION, "Max individual contribution is 1,000");
         }
         require(totalRaised + msg.value <= MAX_TOTAL_CONTRIBUTION, "Max contribution exceeded");
-        if (contributions[msg.sender] == 0) {
-            contributors.push(msg.sender);
-        }
         contributions[msg.sender] += msg.value;
         totalRaised += msg.value;
-        if (currentPhase == Phase.OPEN) {
-            tomato.mint(msg.sender, msg.value * TOMATOES_PER_ETH);
-        }
         emit Contribute(msg.sender, msg.value);
     }
 
-    function getContribution(address contributor) external view returns (uint contribution) {
+    function getContribution(address contributor) external view returns (uint) {
         return contributions[contributor];
     }
 
@@ -81,23 +77,41 @@ contract Ico {
         emit RemoveApprovedInvestor(investor);
     }
 
-    function moveToNextPhase() external onlyOwner {
+    function currentPhaseDesc() external view returns (string memory) {
         if (currentPhase == Phase.SEED) {
-            currentPhase = Phase.GENERAL;
-            emit MoveToPhase(Phase.GENERAL);
+            return "seed";
         }
-        else if (currentPhase == Phase.GENERAL) {
-            currentPhase = Phase.OPEN;
-            emit MoveToPhase(Phase.OPEN);
-            releaseTheTomatoes();
+        if (currentPhase == Phase.GENERAL) {
+            return "general";
         }
+        return "open";
+    }
+    
+    function moveToGeneral() external onlyOwner {
+        require(currentPhase == Phase.SEED, "Not in seed phase");
+        currentPhase = Phase.GENERAL;
+        emit MoveToPhase(Phase.GENERAL);
     }
 
-    function releaseTheTomatoes() private {
-        for (uint i=0; i<contributors.length; i++) {
-            address contributor = contributors[i];
-            tomato.mint(contributor, contributions[contributor] * TOMATOES_PER_ETH);
-        }
+    function moveToOpen() external onlyOwner {
+        require(currentPhase == Phase.GENERAL, "Not in general phase");
+        currentPhase = Phase.OPEN;
+        emit MoveToPhase(Phase.OPEN);
+    }
+
+    function redeem() external {
+        require(currentPhase == Phase.OPEN, "Not authorized");
+        uint available = contributions[msg.sender];
+        require(available > 0, "Nothing to redeem");
+        contributions[msg.sender] = 0;
+        tomato.transfer(msg.sender, available * TOMATOES_PER_ETH);
+    }
+
+    function withdraw() public onlyOwner {
+        uint balance = address(this).balance;
+        require(balance > 0, "Nothing to withdraw");
+        tomato.mint(address(pool), balance * TOMATOES_PER_ETH);
+        pool.icoDeposit{value: balance}();
     }
 
     modifier onlyOwner() {
