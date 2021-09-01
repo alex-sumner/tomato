@@ -111,7 +111,7 @@ describe("TomatoPool contract", function () {
         expect(bobTomatoes).to.be.closeTo(ethers.utils.parseEther("4.9"), ethers.utils.parseEther("0.04"))
     })
 
-    it("should reject trades with slippage > 10%s", async function () {
+    it("should reject trades with slippage > 10%", async function () {
         await hhTomato.mint(hhPool.address, ethers.utils.parseEther("25"))
         await hhPool.icoDeposit({value: ethers.utils.parseEther("5")})
         await hhTomato.mint(hhPool.address, ethers.utils.parseEther("25"))
