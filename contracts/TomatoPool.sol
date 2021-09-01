@@ -35,7 +35,7 @@ contract TomatoPool is ERC20, ReentrancyGuard {
         treasury = _treasury;
     }
     
-    function deposit() external payable {
+    function deposit() external payable nonReentrant {
         _deposit(msg.sender);
     }
 
@@ -123,7 +123,7 @@ contract TomatoPool is ERC20, ReentrancyGuard {
         require(noSlippage - (tradeAmt + fee) <= noSlippage / 10, "slippage is over 10%");
     }
     
-    function sync() public {
+    function sync() private {
         prevEthBalance = address(this).balance;
         prevTmtoBalance = tomato.balanceOf(address(this));
     }
