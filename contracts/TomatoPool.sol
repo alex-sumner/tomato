@@ -60,6 +60,7 @@ contract TomatoPool is ERC20, ReentrancyGuard {
     }
     
     function withdraw() external nonReentrant {
+        sync();
         uint liquidity = balanceOf(address(this));
         uint _totalSupply = totalSupply();
         uint amountEth = (liquidity * address(this).balance) / _totalSupply;
