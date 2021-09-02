@@ -90,26 +90,24 @@ contract TomatoPool is ERC20, ReentrancyGuard {
         (uint ethAmount, uint tmtoAmount) = findAmounts();
         require(ethAmount > 0 || tmtoAmount > 0, "nothing supplied");
         if (ethAmount > 0) {
-            (uint tmtoOut, uint fee) = calcTradeAmtAndFee(ethAmount, prevEthBalance, prevTmtoBalance);
+            uint tmtoOut = calcTradeAmt(ethAmount, prevEthBalance, prevTmtoBalance);
             tomato.transfer(msg.sender, tmtoOut);
-            tomato.transfer(treasury, fee);
             emit SwapEthForTmto(msg.sender, ethAmount, tmtoOut);
         }
         if (tmtoAmount > 0) {
-            (uint ethOut, uint fee) = calcTradeAmtAndFee(tmtoAmount, prevTmtoBalance, prevEthBalance);
+            uint ethOut = calcTradeAmt(tmtoAmount, prevTmtoBalance, prevEthBalance);
             bool sent;
             (sent, ) = msg.sender.call{value: ethOut}("");
-            require(sent, "Failed to send Ether");
-            (sent, ) = treasury.call{value: fee}("");
             require(sent, "Failed to send Ether");
             emit SwapTmtoForEth(msg.sender, ethOut, tmtoAmount);
         }
         sync();
     }
 
-    function calcTradeAmtAndFee(uint xAmt, uint xReserve, uint yReserve) private pure returns (uint tradeAmt, uint fee) {
+    function calcTradeAmt(uint xAmt, uint xReserve, uint yReserve) private pure returns (uint tradeAmt) {
         require(xReserve > 0 && yReserve > 0, "liquidity pool has no reserve");
         //xAmt > 0 is checked by the calling function swap()
+        uint fee;
         uint newYreserve = (xReserve * yReserve) / (xReserve + xAmt);
         if (yReserve > newYreserve) {
             fee = (yReserve - newYreserve) / 100;

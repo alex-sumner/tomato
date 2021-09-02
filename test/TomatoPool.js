@@ -120,16 +120,4 @@ describe("TomatoPool contract", function () {
         await expect(hhPool.connect(bob).swap()).to.be.revertedWith("slippage is over 10%")
     })
 
-    it("should charge fees on trades", async function () {
-        await hhTomato.mint(hhPool.address, ethers.utils.parseEther("25"))
-        await hhPool.icoDeposit({value: ethers.utils.parseEther("5")})
-        await hhTomato.mint(hhPool.address, ethers.utils.parseEther("25"))
-        await hhPool.connect(alice).deposit({value: ethers.utils.parseEther("5")})
-        await hhTomato.mint(hhPool.address, ethers.utils.parseEther("5"))
-        let initialTreasuryBalance = await ethers.provider.getBalance(treasury.address)
-        await hhPool.connect(bob).swap()
-        let finalTreasuryBalance = await ethers.provider.getBalance(treasury.address)
-        expect(finalTreasuryBalance.sub(initialTreasuryBalance)).to.be.closeTo(ethers.utils.parseEther("0.009"), ethers.utils.parseEther("0.0004"))
-    })
-
 })
