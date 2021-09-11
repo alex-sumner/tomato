@@ -1,3 +1,9 @@
+frontend/dist/
+frontend/node_modules/
+frontend/package-lock.json
+frontend/.*
+frontend/public/js/
+frontend/public/css/
 cache/
 artifacts/
 **/*~
